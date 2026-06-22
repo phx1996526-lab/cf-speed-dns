@@ -5,8 +5,8 @@ env:
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
+    - cron: '*/30 * * * *' # 改为每 30 分钟全自动运行一次，确保优选 IP 永远处于最新状态
+  workflow_dispatch: # 允许你随时在页面上手动点击运行
 
 jobs:
   build:
@@ -14,16 +14,28 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
+        
       - name: 'Set up Python'
         uses: actions/setup-python@v5
         with:
           python-version: 3.12
+          
       - name: 'Install dependencies'
         run: if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: 'run dnspod'
+        
+      - name: '优化 @ 根域名'
         env:
           DOMAIN: ${{ secrets.DOMAIN }}
-          SUB_DOMAIN: ${{ secrets.SUB_DOMAIN }}
+          SUB_DOMAIN: '@' # 强制指定根域名
+          SECRETID: ${{ secrets.SECRETID }}
+          SECRETKEY: ${{ secrets.SECRETKEY }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+        run: python dnspod.py
+
+      - name: '优化 www 子域名'
+        env:
+          DOMAIN: ${{ secrets.DOMAIN }}
+          SUB_DOMAIN: 'www' # 强制指定 www 子域名
           SECRETID: ${{ secrets.SECRETID }}
           SECRETKEY: ${{ secrets.SECRETKEY }}
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
